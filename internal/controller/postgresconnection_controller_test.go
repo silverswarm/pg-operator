@@ -24,7 +24,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	postgresv1 "github.com/silverswarm/pg-operator/api/v1"
@@ -85,6 +87,57 @@ var _ = Describe("PostGresConnection Controller", func() {
 			err = k8sClient.Get(ctx, typeNamespacedName, connection)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(connection.Spec.ClusterName).To(Equal("test-cluster"))
+		})
+
+		It("should handle reconcile when connection not found", func() {
+			By("Reconciling a non-existent PostGresConnection")
+			controllerReconciler := &PostGresConnectionReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			nonExistentName := types.NamespacedName{
+				Name:      "non-existent-connection",
+				Namespace: "default",
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: nonExistentName,
+			})
+			Expect(err).NotTo(HaveOccurred()) // Should handle gracefully
+		})
+
+		It("should handle connection validation failure", func() {
+			By("Creating a PostGresConnection that will fail validation")
+			badConnectionName := "bad-validation-connection"
+			badConnection := &postgresv1.PostGresConnection{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      badConnectionName,
+					Namespace: "default",
+				},
+				Spec: postgresv1.PostGresConnectionSpec{
+					ClusterName: "non-existent-cluster", // This will fail secret lookup
+				},
+			}
+			Expect(k8sClient.Create(ctx, badConnection)).To(Succeed())
+
+			controllerReconciler := &PostGresConnectionReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			badNamespacedName := types.NamespacedName{
+				Name:      badConnectionName,
+				Namespace: "default",
+			}
+
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: badNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred()) // Should handle validation failure gracefully
+
+			// Cleanup
+			Expect(k8sClient.Delete(ctx, badConnection)).To(Succeed())
 		})
 	})
 
@@ -263,6 +316,85 @@ var _ = Describe("PostGresConnection Controller", func() {
 				// Verify status
 				Expect(updatedConn.Status.Ready).To(BeFalse())
 				Expect(updatedConn.Status.Message).To(Equal(errorMsg))
+			})
+		})
+
+		Describe("validateConnection", func() {
+			var superuserSecret *corev1.Secret
+
+			BeforeEach(func() {
+				// Create a mock CNPG superuser secret for validation tests
+				superuserSecret = &corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "validate-cluster-superuser",
+						Namespace: "default",
+					},
+					Data: map[string][]byte{
+						"username": []byte("postgres"),
+						"password": []byte("secret123"),
+						"host":     []byte("validate-cluster-rw"),
+						"port":     []byte("5432"),
+					},
+				}
+				Expect(k8sClient.Create(ctx, superuserSecret)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(k8sClient.Delete(ctx, superuserSecret)).To(Succeed())
+			})
+
+			It("should handle connection validation attempts", func() {
+				connection.Spec.ClusterName = "validate-cluster"
+
+				// This will attempt to connect and fail (no real database), but tests the validation logic
+				err := reconciler.validateConnection(ctx, connection)
+				Expect(err).To(HaveOccurred()) // Expected to fail - no real database
+			})
+
+			It("should handle missing secrets during validation", func() {
+				connection.Spec.ClusterName = "nonexistent-cluster"
+
+				err := reconciler.validateConnection(ctx, connection)
+				Expect(err).To(HaveOccurred()) // Should fail due to missing secret
+			})
+		})
+
+		Describe("parseURIConnection", func() {
+			It("should return not implemented error", func() {
+				host, port, username, password, err := reconciler.parseURIConnection("postgresql://user:pass@host:5432/db", connection)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("not yet implemented"))
+				Expect(host).To(BeEmpty())
+				Expect(port).To(Equal(int32(0)))
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
+			})
+
+			It("should handle empty URI", func() {
+				host, port, username, password, err := reconciler.parseURIConnection("", connection)
+				Expect(err).To(HaveOccurred())
+				Expect(host).To(BeEmpty())
+				Expect(port).To(Equal(int32(0)))
+				Expect(username).To(BeEmpty())
+				Expect(password).To(BeEmpty())
+			})
+		})
+
+		Describe("SetupWithManager", func() {
+			It("should setup controller with manager", func() {
+				// Create a fake manager for testing
+				scheme := runtime.NewScheme()
+				Expect(postgresv1.AddToScheme(scheme)).To(Succeed())
+
+				// This tests the controller registration logic
+				mgr, err := manager.New(testEnv.Config, manager.Options{
+					Scheme:  scheme,
+					Metrics: manager.Options{}.Metrics, // Disable metrics server for tests
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				err = reconciler.SetupWithManager(mgr)
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 	})
