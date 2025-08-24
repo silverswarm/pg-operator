@@ -1,0 +1,25 @@
+apiVersion: postgres.silverswarm.io/v1
+kind: Database
+metadata:
+  labels:
+    app.kubernetes.io/name: pg-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: database-sample
+spec:
+  connectionRef:
+    name: "postgresconnection-sample"
+  databaseName: "myapp"
+  owner: "postgres"
+  encoding: "UTF8"
+  users:
+    - name: "app_user"
+      permissions:
+        - "CONNECT"
+        - "CREATE"
+      createSecret: true
+      secretName: "myapp-app-user"
+    - name: "readonly_user"
+      permissions:
+        - "CONNECT"
+        - "SELECT"
+      createSecret: true

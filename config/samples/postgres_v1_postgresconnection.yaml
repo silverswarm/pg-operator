@@ -1,0 +1,26 @@
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  labels:
+    app.kubernetes.io/name: pg-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: postgresconnection-sample
+spec:
+  clusterName: "postgres-cluster"
+  # Optional: specify CNPG cluster namespace if different from current namespace
+  # clusterNamespace: "postgres-system"
+  
+  # Optional: use app user instead of superuser (recommended for database operations)
+  # useAppSecret: true
+  
+  # Optional: specify custom secret (overrides default CNPG secrets)
+  # superUserSecret:
+  #   name: "custom-superuser-secret"
+  #   namespace: "postgres-system"
+  
+  # Optional: specify custom host and port (overrides CNPG service discovery)
+  # host: "postgres.example.com"
+  # port: 5432
+  
+  # Optional: SSL mode configuration (defaults to "require")
+  # sslMode: "require"
