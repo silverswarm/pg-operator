@@ -609,7 +609,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.ensureDatabase(ctx, nil, database)
+					_, _ = reconciler.ensureDatabase(ctx, nil, database)
 				}()
 				Expect(panicked).To(BeTrue()) // Expected to panic with nil db
 			})
@@ -629,7 +629,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.ensureDatabase(ctx, nil, database)
+					_, _ = reconciler.ensureDatabase(ctx, nil, database)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
@@ -661,7 +661,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.ensureUsers(ctx, nil, database)
+					_, _ = reconciler.ensureUsers(ctx, nil, database)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
@@ -698,7 +698,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.ensureUser(ctx, nil, user)
+					_ = reconciler.ensureUser(ctx, nil, user)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
@@ -717,7 +717,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.ensureUser(ctx, nil, user)
+					_ = reconciler.ensureUser(ctx, nil, user)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
@@ -742,7 +742,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.grantPermissions(ctx, nil, "testdb", user)
+					_ = reconciler.grantPermissions(ctx, nil, "testdb", user)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
@@ -761,7 +761,7 @@ var _ = Describe("Database Controller", func() {
 							panicked = true
 						}
 					}()
-					reconciler.grantPermissions(ctx, nil, "testdb", user)
+					_ = reconciler.grantPermissions(ctx, nil, "testdb", user)
 				}()
 				Expect(panicked).To(BeTrue())
 			})
