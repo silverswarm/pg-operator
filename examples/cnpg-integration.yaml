@@ -1,0 +1,93 @@
+# Example showing different CNPG integration patterns
+
+---
+# Basic connection to CNPG cluster in same namespace
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: basic-cnpg-connection
+  namespace: default
+spec:
+  clusterName: "my-postgres-cluster"
+  # Uses: my-postgres-cluster-superuser secret automatically
+  # Connects to: my-postgres-cluster-rw service
+
+---
+# Cross-namespace CNPG connection
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: cross-namespace-connection
+  namespace: app-namespace
+spec:
+  clusterName: "shared-postgres"
+  clusterNamespace: "postgres-system"
+  # Uses: shared-postgres-superuser secret from postgres-system namespace
+  # Connects to: shared-postgres-rw.postgres-system.svc.cluster.local
+
+---
+# Using CNPG app user instead of superuser
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: app-user-connection
+  namespace: default
+spec:
+  clusterName: "my-postgres-cluster"
+  useAppSecret: true
+  # Uses: my-postgres-cluster-app secret instead of superuser
+  # Recommended for database operations that don't need superuser privileges
+
+---
+# Custom SSL configuration
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: secure-connection
+  namespace: default
+spec:
+  clusterName: "secure-postgres"
+  sslMode: "verify-full"
+  # Uses stricter SSL verification
+
+---
+# Database creation using the connection
+apiVersion: postgres.silverswarm.io/v1
+kind: Database
+metadata:
+  name: myapp-database
+  namespace: default
+spec:
+  connectionRef:
+    name: "basic-cnpg-connection"
+  databaseName: "myapp"
+  users:
+    - name: "app_user"
+      permissions:
+        - "CONNECT"
+        - "CREATE"
+      createSecret: true
+    - name: "readonly_user"
+      permissions:
+        - "CONNECT"
+        - "SELECT"
+      createSecret: true
+
+---
+# Cross-namespace database using cross-namespace connection
+apiVersion: postgres.silverswarm.io/v1
+kind: Database
+metadata:
+  name: shared-database
+  namespace: app-namespace
+spec:
+  connectionRef:
+    name: "cross-namespace-connection"
+  databaseName: "shared_app"
+  users:
+    - name: "tenant_user"
+      permissions:
+        - "CONNECT"
+        - "ALL"
+      createSecret: true
+      secretName: "tenant-credentials"
