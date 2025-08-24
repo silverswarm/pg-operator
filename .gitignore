@@ -1,0 +1,121 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build artifacts
+bin/
+testbin/
+manager
+Dockerfile.cross
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+cover.out
+coverage.txt
+coverage.html
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Go vendor directory
+vendor/
+
+# Kubernetes Generated files - skip generated files, except for vendored files
+!vendor/**/zz_generated.*
+
+# Controller-gen temporary files
+.controller-gen
+
+# Kubebuilder generated files that shouldn't be committed
+config/samples/kustomization.yaml.bak
+
+# Editor and IDE files
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# Temporary Build Files
+build/_output
+build/_test
+imports.go
+
+# Local development
+.env
+.env.local
+*.local
+config/local/
+
+# Docker
+Dockerfile.cross
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+
+# Logs
+logs/
+*.log
+
+# Build artifacts
+dist/
+output/
+release/
+
+# Test artifacts
+kubeconfig
+*.kubeconfig
+test-results/
+
+# Dependency directories
+node_modules/
+
+# Cloud IDE files
+.c9/
+*.launch
+.settings/
+
+# Debug files
+*.pdb
+
+# Archives
+*.tar.gz
+*.zip
+*.tar
+*.rar
+
+# SSL certificates for development
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+
+# Local secrets (should never be committed)
+secrets/
+*.secret
+.secrets
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Development environment configurations (user-specific)
+.claude/
+.devcontainer/

@@ -1,0 +1,41 @@
+# More info: https://docs.docker.com/engine/reference/builder/#dockerignore-file
+
+# Build artifacts
+bin/
+testbin/
+manager
+dist/
+*.test
+
+# Development files
+.git/
+.github/
+*.md
+LICENSE
+CHANGELOG.md
+CONTRIBUTING.md
+examples/
+cover.out
+coverage.txt
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+test/
+*.kubeconfig
+
+# Local config
+.env
+*.local
+config/local/
+
+# Documentation
+docs/
