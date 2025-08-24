@@ -192,10 +192,10 @@ func (r *DatabaseReconciler) ensureDatabase(ctx context.Context, db *sql.DB, dat
 }
 
 func (r *DatabaseReconciler) ensureUsers(ctx context.Context, db *sql.DB, database *postgresv1.Database) ([]string, error) {
-	var usersCreated []string
+	usersCreated := make([]string, 0, len(database.Spec.Users))
 
 	for _, user := range database.Spec.Users {
-		if err := r.ensureUser(ctx, db, database, user); err != nil {
+		if err := r.ensureUser(ctx, db, user); err != nil {
 			return usersCreated, fmt.Errorf("failed to ensure user %s: %w", user.Name, err)
 		}
 
@@ -215,7 +215,7 @@ func (r *DatabaseReconciler) ensureUsers(ctx context.Context, db *sql.DB, databa
 	return usersCreated, nil
 }
 
-func (r *DatabaseReconciler) ensureUser(ctx context.Context, db *sql.DB, database *postgresv1.Database, user postgresv1.DatabaseUser) error {
+func (r *DatabaseReconciler) ensureUser(ctx context.Context, db *sql.DB, user postgresv1.DatabaseUser) error {
 	var exists bool
 	query := "SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = $1)"
 	if err := db.QueryRowContext(ctx, query, user.Name).Scan(&exists); err != nil {
