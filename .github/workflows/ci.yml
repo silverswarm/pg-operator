@@ -119,9 +119,9 @@ jobs:
           kubectl apply -f test/e2e/manifests/postgres-cluster.yaml
           kubectl wait --for=condition=Ready cluster/postgres-cluster --timeout=600s
 
-      - name: Load operator image into Kind
+      - name: Build and load operator image into Kind
         run: |
-          docker pull ghcr.io/${{ github.repository }}:${{ github.sha }}
+          docker build -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
           kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name pg-operator-test
 
       - name: Deploy operator
