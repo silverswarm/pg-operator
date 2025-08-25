@@ -8,7 +8,7 @@ on:
 
 env:
   GO_VERSION: '1.24'
-  CNPG_VERSION: '1.24.3'
+  CNPG_VERSION: '1.24.4'
 
 jobs:
   test:
@@ -111,7 +111,7 @@ jobs:
 
       - name: Install CloudNativePG Operator
         run: |
-          kubectl apply -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-${{ env.CNPG_VERSION }}/releases/cnpg-${{ env.CNPG_VERSION }}.yaml
+          kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-1.24/releases/cnpg-${{ env.CNPG_VERSION }}.yaml
           kubectl wait --for=condition=Available deployment/cnpg-controller-manager -n cnpg-system --timeout=300s
 
       - name: Create PostgreSQL cluster
