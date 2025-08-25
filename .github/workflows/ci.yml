@@ -33,6 +33,17 @@ jobs:
       #     skip-cache: false
       #     args: --timeout=5m
 
+      - name: Debug Go environment
+        run: |
+          go version
+          go env GOROOT
+          go env GOPATH
+          go env GO111MODULE
+          ls -la pkg/
+          ls -la internal/controller/
+          go mod download
+          go mod verify
+          
       - name: Run unit tests
         run: make test
 
