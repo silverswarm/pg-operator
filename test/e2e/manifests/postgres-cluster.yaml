@@ -23,7 +23,7 @@ spec:
     storageClass: standard
     
   monitoring:
-    enabled: false
+    enablePodMonitor: false
     
   backup:
     retentionPolicy: "1d"
