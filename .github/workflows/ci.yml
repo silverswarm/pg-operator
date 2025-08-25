@@ -121,12 +121,12 @@ jobs:
 
       - name: Build and load operator image into Kind
         run: |
-          docker build -t ghcr.io/${{ github.repository }}:${{ github.sha }} .
-          kind load docker-image ghcr.io/${{ github.repository }}:${{ github.sha }} --name pg-operator-test
+          docker build -t pg-operator:latest .
+          kind load docker-image pg-operator:latest --name pg-operator-test
 
       - name: Deploy operator
         run: |
-          export IMG=ghcr.io/${{ github.repository }}:${{ github.sha }}
+          export IMG=pg-operator:latest
           make install
           make deploy
 
