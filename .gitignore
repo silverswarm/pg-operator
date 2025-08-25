@@ -8,7 +8,7 @@
 # Go build artifacts
 bin/
 testbin/
-manager
+/manager
 Dockerfile.cross
 
 # Test binary, built with `go test -c`
