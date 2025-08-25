@@ -132,7 +132,11 @@ jobs:
 
       - name: Wait for operator to be ready
         run: |
-          kubectl wait --for=condition=Available deployment/operator-controller-manager -n operator-system --timeout=300s
+          echo "Checking operator deployment status..."
+          kubectl get deployment operator-controller-manager -n operator-system
+          kubectl get pods -n operator-system
+          echo "Waiting for operator to be ready (10 minutes timeout)..."
+          kubectl wait --for=condition=Available deployment/operator-controller-manager -n operator-system --timeout=600s
 
       - name: Run e2e tests
         run: |
@@ -142,8 +146,16 @@ jobs:
       - name: Collect logs on failure
         if: failure()
         run: |
+          echo "=== Operator pod status ==="
+          kubectl get pods -n operator-system -o wide
+          kubectl describe pods -n operator-system
+          echo "=== Operator pod events ==="
+          kubectl get events -n operator-system --sort-by=.metadata.creationTimestamp
+          echo "=== Node resources ==="
+          kubectl top nodes || echo "Metrics not available"
+          kubectl describe nodes
           echo "=== Operator logs ==="
-          kubectl logs -l control-plane=controller-manager -n operator-system --tail=100
+          kubectl logs -l control-plane=controller-manager -n operator-system --tail=100 || echo "No logs available yet"
           echo "=== CNPG logs ==="
           kubectl logs -l app.kubernetes.io/name=cloudnative-pg -n cnpg-system --tail=100
           echo "=== PostgreSQL cluster status ==="
