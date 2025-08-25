@@ -1,4 +1,10 @@
-# This patch adds the args, volumes, and ports to allow the manager to use the metrics-server certs.
+# Consolidated metrics configuration
+# This combines cert_metrics_manager_patch.yaml and manager_metrics_patch.yaml
+
+# Configure metrics to bind on secure port
+- op: add
+  path: /spec/template/spec/containers/0/args/0
+  value: --metrics-bind-address=:8443
 
 # Add the volumeMount for the metrics-server certs
 - op: add

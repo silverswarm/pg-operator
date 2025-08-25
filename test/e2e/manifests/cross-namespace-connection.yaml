@@ -1,0 +1,9 @@
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: cross-ns-connection
+  namespace: test-app
+spec:
+  clusterName: postgres-cluster
+  clusterNamespace: default
+  sslMode: "require"

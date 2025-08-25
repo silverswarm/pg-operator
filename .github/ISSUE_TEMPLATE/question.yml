@@ -1,0 +1,43 @@
+name: Question
+description: Ask a question about pg-operator
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your question! Please search existing issues first.
+        
+  - type: textarea
+    id: question
+    attributes:
+      label: What's your question?
+      description: Please be as specific as possible
+    validations:
+      required: true
+      
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: |
+        Provide any relevant context like:
+        - What you're trying to achieve
+        - What you've already tried
+        - Configuration details
+        
+  - type: input
+    id: version
+    attributes:
+      label: pg-operator version
+      description: What version are you using?
+      placeholder: v0.1.0
+      
+  - type: checkboxes
+    id: search
+    attributes:
+      label: I have searched existing issues
+      description: Before asking, please search existing issues and documentation
+      options:
+        - label: I have searched existing issues and documentation
+          required: true

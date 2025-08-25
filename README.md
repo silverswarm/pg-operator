@@ -254,8 +254,13 @@ Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for detai
 | Multi-arch images | ✅ Stable |
 | Security scanning | ✅ Enabled |
 
+## Documentation
+
+- 📖 [Documentation](docs/) - Architecture, contributing guidelines, and changelog
+- 📋 [Examples](examples/) - Usage examples and configurations
+- 🔧 [Development Setup](scripts/dev-setup.sh) - One-command development environment
+
 ## Support
 
-- 📖 [Documentation](https://github.com/silverswarm/pg-operator/tree/main/examples)
 - 🐛 [Issues](https://github.com/silverswarm/pg-operator/issues)
 - 💬 [Discussions](https://github.com/silverswarm/pg-operator/discussions)

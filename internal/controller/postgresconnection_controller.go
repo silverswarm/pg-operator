@@ -18,28 +18,25 @@ package controller
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	_ "github.com/lib/pq"
-	corev1 "k8s.io/api/core/v1"
-
 	postgresv1 "github.com/silverswarm/pg-operator/api/v1"
+	"github.com/silverswarm/pg-operator/pkg/k8s"
+	"github.com/silverswarm/pg-operator/pkg/postgres"
+	"github.com/silverswarm/pg-operator/pkg/utils"
 )
 
 // PostGresConnectionReconciler reconciles a PostGresConnection object
 type PostGresConnectionReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme        *runtime.Scheme
+	pgClient      *postgres.Client
+	statusService *k8s.StatusService
 }
 
 // +kubebuilder:rbac:groups=postgres.silverswarm.io,resources=postgresconnections,verbs=get;list;watch;create;update;patch;delete
@@ -53,153 +50,34 @@ func (r *PostGresConnectionReconciler) Reconcile(ctx context.Context, req ctrl.R
 
 	var pgConn postgresv1.PostGresConnection
 	if err := r.Get(ctx, req.NamespacedName, &pgConn); err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("PostGresConnection resource not found")
-			return ctrl.Result{}, nil
-		}
-		log.Error(err, "Failed to get PostGresConnection")
-		return ctrl.Result{}, err
+		return utils.HandleReconcileError(err, "Failed to get PostGresConnection", log)
 	}
 
 	if err := r.validateConnection(ctx, &pgConn); err != nil {
-		return r.updateStatus(ctx, &pgConn, false, err.Error())
+		return r.statusService.UpdatePostGresConnectionStatus(ctx, &pgConn, false, err.Error())
 	}
 
-	return r.updateStatus(ctx, &pgConn, true, "Connection validated successfully")
+	return r.statusService.UpdatePostGresConnectionStatus(ctx, &pgConn, true, "Connection validated successfully")
 }
 
 func (r *PostGresConnectionReconciler) validateConnection(ctx context.Context, pgConn *postgresv1.PostGresConnection) error {
-	host, port, username, password, err := r.getConnectionDetails(ctx, pgConn)
+	db, err := r.pgClient.Connect(ctx, pgConn)
 	if err != nil {
-		return fmt.Errorf("failed to get connection details: %w", err)
-	}
-
-	sslMode := pgConn.Spec.SSLMode
-	if sslMode == "" {
-		sslMode = "require"
-	}
-
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=%s", host, port, username, password, sslMode)
-	db, err := sql.Open("postgres", connStr)
-	if err != nil {
-		return fmt.Errorf("failed to open database connection: %w", err)
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 	defer db.Close()
-
-	if err := db.PingContext(ctx); err != nil {
-		return fmt.Errorf("failed to ping database: %w", err)
-	}
 
 	return nil
 }
 
-func (r *PostGresConnectionReconciler) getConnectionDetails(ctx context.Context, pgConn *postgresv1.PostGresConnection) (string, int32, string, string, error) {
-	host := pgConn.Spec.Host
-	port := pgConn.Spec.Port
-	if port == 0 {
-		port = 5432
+// NewPostGresConnectionReconciler creates a new PostGresConnectionReconciler with all required services
+func NewPostGresConnectionReconciler(client client.Client, scheme *runtime.Scheme) *PostGresConnectionReconciler {
+	return &PostGresConnectionReconciler{
+		Client:        client,
+		Scheme:        scheme,
+		pgClient:      postgres.NewClient(client),
+		statusService: k8s.NewStatusService(client),
 	}
-
-	clusterNamespace := pgConn.Spec.ClusterNamespace
-	if clusterNamespace == "" {
-		clusterNamespace = pgConn.Namespace
-	}
-
-	if host == "" {
-		if clusterNamespace == pgConn.Namespace {
-			host = fmt.Sprintf("%s-rw", pgConn.Spec.ClusterName)
-		} else {
-			host = fmt.Sprintf("%s-rw.%s.svc.cluster.local", pgConn.Spec.ClusterName, clusterNamespace)
-		}
-	}
-
-	var username, password string
-	var secret corev1.Secret
-	var secretKey types.NamespacedName
-
-	if pgConn.Spec.SuperUserSecret != nil {
-		secretNamespace := pgConn.Spec.SuperUserSecret.Namespace
-		if secretNamespace == "" {
-			secretNamespace = pgConn.Namespace
-		}
-
-		secretKey = types.NamespacedName{
-			Name:      pgConn.Spec.SuperUserSecret.Name,
-			Namespace: secretNamespace,
-		}
-	} else {
-		var secretName string
-		if pgConn.Spec.UseAppSecret != nil && *pgConn.Spec.UseAppSecret {
-			secretName = fmt.Sprintf("%s-app", pgConn.Spec.ClusterName)
-		} else {
-			secretName = fmt.Sprintf("%s-superuser", pgConn.Spec.ClusterName)
-		}
-
-		secretKey = types.NamespacedName{
-			Name:      secretName,
-			Namespace: clusterNamespace,
-		}
-	}
-
-	if err := r.Get(ctx, secretKey, &secret); err != nil {
-		return "", 0, "", "", fmt.Errorf("failed to get CNPG secret %s: %w", secretKey, err)
-	}
-
-	if uriBytes, ok := secret.Data["uri"]; ok {
-		return r.parseURIConnection(string(uriBytes), pgConn)
-	}
-
-	usernameBytes, ok := secret.Data["username"]
-	if !ok {
-		return "", 0, "", "", fmt.Errorf("username not found in CNPG secret %s", secretKey)
-	}
-	username = string(usernameBytes)
-
-	passwordBytes, ok := secret.Data["password"]
-	if !ok {
-		return "", 0, "", "", fmt.Errorf("password not found in CNPG secret %s", secretKey)
-	}
-	password = string(passwordBytes)
-
-	return host, port, username, password, nil
-}
-
-func (r *PostGresConnectionReconciler) parseURIConnection(uri string, pgConn *postgresv1.PostGresConnection) (string, int32, string, string, error) {
-	return "", 0, "", "", fmt.Errorf("URI parsing not yet implemented, falling back to individual fields")
-}
-
-func (r *PostGresConnectionReconciler) updateStatus(ctx context.Context, pgConn *postgresv1.PostGresConnection, ready bool, message string) (ctrl.Result, error) {
-	now := metav1.NewTime(time.Now())
-	pgConn.Status.Ready = ready
-	pgConn.Status.Message = message
-	pgConn.Status.LastChecked = &now
-
-	conditionType := "Ready"
-	conditionStatus := metav1.ConditionFalse
-	if ready {
-		conditionStatus = metav1.ConditionTrue
-	}
-
-	condition := metav1.Condition{
-		Type:               conditionType,
-		Status:             conditionStatus,
-		LastTransitionTime: now,
-		Reason:             "ConnectionValidated",
-		Message:            message,
-	}
-
-	pgConn.Status.Conditions = []metav1.Condition{condition}
-
-	if err := r.Status().Update(ctx, pgConn); err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to update status: %w", err)
-	}
-
-	requeueAfter := time.Minute * 5
-	if !ready {
-		requeueAfter = time.Minute
-	}
-
-	return ctrl.Result{RequeueAfter: requeueAfter}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

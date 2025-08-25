@@ -1,0 +1,7 @@
+apiVersion: postgres.silverswarm.io/v1
+kind: PostGresConnection
+metadata:
+  name: test-connection
+spec:
+  clusterName: postgres-cluster
+  sslMode: "require"

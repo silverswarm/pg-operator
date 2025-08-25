@@ -1,0 +1,23 @@
+apiVersion: postgres.silverswarm.io/v1
+kind: Database
+metadata:
+  name: test-database
+spec:
+  connectionRef:
+    name: test-connection
+  databaseName: testdb
+  owner: postgres
+  encoding: UTF8
+  users:
+    - name: app_user
+      permissions:
+        - CONNECT
+        - CREATE
+        - ALL
+      createSecret: true
+    - name: readonly_user
+      permissions:
+        - CONNECT
+        - SELECT
+      createSecret: true
+      secretName: readonly-user-credentials
