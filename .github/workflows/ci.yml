@@ -30,6 +30,7 @@ jobs:
         with:
           version: v1.64.8
           skip-cache: false
+          args: --timeout=5m
 
       - name: Run unit tests
         run: make test
