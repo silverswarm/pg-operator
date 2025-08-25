@@ -1,0 +1,106 @@
+package postgres
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
+
+	_ "github.com/lib/pq"
+	postgresv1 "github.com/silverswarm/pg-operator/api/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type Client struct {
+	k8sClient client.Client
+}
+
+func NewClient(k8sClient client.Client) *Client {
+	return &Client{
+		k8sClient: k8sClient,
+	}
+}
+
+func (c *Client) Connect(ctx context.Context, pgConn *postgresv1.PostGresConnection) (*sql.DB, error) {
+	host, port, username, password, err := c.getConnectionDetails(ctx, pgConn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get connection details: %w", err)
+	}
+
+	sslMode := pgConn.Spec.SSLMode
+	if sslMode == "" {
+		sslMode = "require"
+	}
+
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s sslmode=%s",
+		host, port, username, password, sslMode)
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database connection: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("failed to ping database: %w", err)
+	}
+
+	return db, nil
+}
+
+func (c *Client) getConnectionDetails(ctx context.Context, pgConn *postgresv1.PostGresConnection) (string, int32, string, string, error) {
+	host := pgConn.Spec.Host
+	port := pgConn.Spec.Port
+	if port == 0 {
+		port = 5432
+	}
+	if host == "" {
+		host = fmt.Sprintf("%s-rw", pgConn.Spec.ClusterName)
+	}
+
+	username, password, err := c.getCredentials(ctx, pgConn)
+	if err != nil {
+		return "", 0, "", "", err
+	}
+
+	return host, port, username, password, nil
+}
+
+func (c *Client) getCredentials(ctx context.Context, pgConn *postgresv1.PostGresConnection) (string, string, error) {
+	var secretName, secretNamespace string
+
+	if pgConn.Spec.SuperUserSecret != nil {
+		secretName = pgConn.Spec.SuperUserSecret.Name
+		secretNamespace = pgConn.Spec.SuperUserSecret.Namespace
+		if secretNamespace == "" {
+			secretNamespace = pgConn.Namespace
+		}
+	} else {
+		secretName = fmt.Sprintf("%s-superuser", pgConn.Spec.ClusterName)
+		secretNamespace = pgConn.Namespace
+	}
+
+	var secret corev1.Secret
+	secretKey := types.NamespacedName{
+		Name:      secretName,
+		Namespace: secretNamespace,
+	}
+
+	if err := c.k8sClient.Get(ctx, secretKey, &secret); err != nil {
+		return "", "", fmt.Errorf("failed to get secret %s: %w", secretKey, err)
+	}
+
+	username := string(secret.Data["username"])
+	password := string(secret.Data["password"])
+
+	if username == "" || password == "" {
+		return "", "", fmt.Errorf("secret %s is missing username or password", secretKey)
+	}
+
+	return username, password, nil
+}
