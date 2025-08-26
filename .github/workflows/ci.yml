@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.23'
   CNPG_VERSION: '1.24.4'
 
 jobs:
@@ -141,6 +141,7 @@ jobs:
       - name: Run e2e tests
         run: |
           export USE_EXISTING_CLUSTER=true
+          export IMG=pg-operator:latest
           make test-e2e
 
       - name: Collect logs on failure

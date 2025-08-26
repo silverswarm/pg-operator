@@ -44,7 +44,12 @@ var (
 
 	// projectImage is the name of the image which will be build and loaded
 	// with the code source changes to be tested.
-	projectImage = "example.com/operator:v0.0.1"
+	projectImage = func() string {
+		if img := os.Getenv("IMG"); img != "" {
+			return img
+		}
+		return "example.com/operator:v0.0.1"
+	}()
 
 	// These will be set by the BeforeSuite
 	cfg       *rest.Config
