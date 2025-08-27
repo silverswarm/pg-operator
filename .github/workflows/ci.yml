@@ -116,6 +116,9 @@ jobs:
 
       - name: Create PostgreSQL cluster
         run: |
+          # Delete existing cluster if it exists to ensure fresh config
+          kubectl delete -f test/e2e/manifests/postgres-cluster.yaml --ignore-not-found=true
+          kubectl wait --for=delete cluster/postgres-cluster --timeout=300s || true
           kubectl apply -f test/e2e/manifests/postgres-cluster.yaml
           kubectl wait --for=condition=Ready cluster/postgres-cluster --timeout=600s
 
