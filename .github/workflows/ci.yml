@@ -106,7 +106,7 @@ jobs:
         with:
           version: v0.24.0
           node_image: kindest/node:v1.31.2
-          cluster_name: pg-operator-test
+          cluster_name: operator-test-e2e
           config: .github/kind-config.yaml
 
       - name: Install CloudNativePG Operator
@@ -122,7 +122,9 @@ jobs:
       - name: Build and load operator image into Kind
         run: |
           docker build -t pg-operator:latest .
-          kind load docker-image pg-operator:latest --name pg-operator-test
+          kind load docker-image pg-operator:latest --name operator-test-e2e
+          echo "Verifying image is loaded in Kind cluster:"
+          docker exec operator-test-e2e-control-plane crictl images | grep pg-operator || echo "Image not found in Kind"
 
       - name: Deploy operator
         run: |
@@ -142,6 +144,7 @@ jobs:
         run: |
           export USE_EXISTING_CLUSTER=true
           export IMG=pg-operator:latest
+          export KIND_CLUSTER=operator-test-e2e
           make test-e2e
 
       - name: Collect logs on failure
