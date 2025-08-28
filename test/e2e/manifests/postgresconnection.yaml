@@ -4,4 +4,4 @@ metadata:
   name: test-connection
 spec:
   clusterName: postgres-cluster
-  sslMode: "require"
+  sslMode: "prefer"
