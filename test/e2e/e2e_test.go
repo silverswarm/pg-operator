@@ -17,6 +17,7 @@ limitations under the License.
 package e2e
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -50,8 +51,13 @@ var _ = Describe("Manager", Ordered, func() {
 	// and deploying the controller.
 	BeforeAll(func() {
 		By("creating manager namespace")
-		cmd := exec.Command("kubectl", "create", "ns", namespace)
-		_, err := testutil.Run(cmd)
+		cmd := exec.Command("kubectl", "create", "ns", namespace, "--dry-run=client", "-o", "yaml")
+		output, err := testutil.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "Failed to generate namespace YAML")
+		
+		cmd = exec.Command("kubectl", "apply", "-f", "-")
+		cmd.Stdin = bytes.NewReader(output)
+		_, err = testutil.Run(cmd)
 		Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 
 		By("labeling the namespace to enforce the restricted security policy")
