@@ -59,8 +59,13 @@ func (c *Client) getConnectionDetails(ctx context.Context, pgConn *postgresv1.Po
 	if port == 0 {
 		port = 5432
 	}
+
 	if host == "" {
-		host = fmt.Sprintf("%s-rw", pgConn.Spec.ClusterName)
+		clusterNamespace := pgConn.Spec.ClusterNamespace
+		if clusterNamespace == "" {
+			clusterNamespace = pgConn.Namespace
+		}
+		host = fmt.Sprintf("%s-rw.%s.svc", pgConn.Spec.ClusterName, clusterNamespace)
 	}
 
 	username, password, err := c.getCredentials(ctx, pgConn)
@@ -82,7 +87,10 @@ func (c *Client) getCredentials(ctx context.Context, pgConn *postgresv1.PostGres
 		}
 	} else {
 		secretName = fmt.Sprintf("%s-superuser", pgConn.Spec.ClusterName)
-		secretNamespace = pgConn.Namespace
+		secretNamespace = pgConn.Spec.ClusterNamespace
+		if secretNamespace == "" {
+			secretNamespace = pgConn.Namespace
+		}
 	}
 
 	var secret corev1.Secret

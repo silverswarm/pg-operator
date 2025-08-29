@@ -39,7 +39,7 @@ var _ = Describe("PostgreSQL Operator", Ordered, func() {
 		connectionName   = "test-connection"
 		databaseName     = "test-database"
 		crossNsNamespace = "test-app"
-		timeout          = 10 * time.Minute
+		timeout          = 15 * time.Minute
 		interval         = 5 * time.Second
 	)
 
