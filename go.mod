@@ -7,10 +7,10 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo/v2 v2.25.1
 	github.com/onsi/gomega v1.38.1
-	k8s.io/api v0.33.0
-	k8s.io/apimachinery v0.33.0
-	k8s.io/client-go v0.33.0
-	sigs.k8s.io/controller-runtime v0.21.0
+        k8s.io/api v0.28.3
+        k8s.io/apimachinery v0.28.3
+        k8s.io/client-go v0.28.3
+        sigs.k8s.io/controller-runtime v0.17.5
 )
 
 require (
@@ -87,15 +87,12 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.33.0 // indirect
-	k8s.io/apiserver v0.33.0 // indirect
-	k8s.io/component-base v0.33.0 // indirect
-	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
-	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
-	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
-	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
+        k8s.io/apiextensions-apiserver v0.28.3 // indirect
+        k8s.io/apiserver v0.28.3 // indirect
+        k8s.io/component-base v0.28.3 // indirect
+        sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.31.2 // indirect
+        sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
+        sigs.k8s.io/randfill v1.0.0 // indirect
+        sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
+        sigs.k8s.io/yaml v1.4.0 // indirect
 )
