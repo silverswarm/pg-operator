@@ -1,3 +1,3 @@
 [tools]
 go = "1.25.0"
-kubebuilder = "latest"
+kubebuilder = "4.8.0"
