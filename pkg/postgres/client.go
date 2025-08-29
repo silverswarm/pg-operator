@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -65,7 +66,13 @@ func (c *Client) getConnectionDetails(ctx context.Context, pgConn *postgresv1.Po
 		if clusterNamespace == "" {
 			clusterNamespace = pgConn.Namespace
 		}
-		host = fmt.Sprintf("%s-rw.%s.svc", pgConn.Spec.ClusterName, clusterNamespace)
+
+		clusterDomain := os.Getenv("KUBERNETES_CLUSTER_DOMAIN")
+		if clusterDomain == "" {
+			clusterDomain = "cluster.local"
+		}
+
+		host = fmt.Sprintf("%s-rw.%s.svc.%s", pgConn.Spec.ClusterName, clusterNamespace, clusterDomain)
 	}
 
 	username, password, err := c.getCredentials(ctx, pgConn)
