@@ -1,36 +1,3 @@
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: postgres-cluster
-spec:
-  instances: 1
-  
-  enableSuperuserAccess: true
-  
-  postgresql:
-    parameters:
-      max_connections: "200"
-      shared_buffers: "256MB"
-      effective_cache_size: "1GB"
-      
-  bootstrap:
-    initdb:
-      database: postgres
-      owner: postgres
-      secret:
-        name: postgres-credentials
-      
-  storage:
-    size: 1Gi
-    storageClass: standard
-    
-  monitoring:
-    enablePodMonitor: false
-    
-  backup:
-    retentionPolicy: "1d"
-
----
 apiVersion: v1
 kind: Secret
 metadata:
@@ -39,3 +6,37 @@ type: kubernetes.io/basic-auth
 data:
   username: cG9zdGdyZXM=  # postgres
   password: cGFzc3dvcmQ=  # password
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+spec:
+  instances: 1
+
+  enableSuperuserAccess: true
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+
+  bootstrap:
+    initdb:
+      database: postgres
+      owner: postgres
+      secret:
+        name: postgres-credentials
+
+  storage:
+    size: 1Gi
+    storageClass: standard
+
+  monitoring:
+    enablePodMonitor: false
+
+  backup:
+    retentionPolicy: "1d"
+

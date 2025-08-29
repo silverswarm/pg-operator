@@ -60,6 +60,12 @@ var _ = Describe("PostgreSQL Operator", Ordered, func() {
 		_, err = testutil.Run(cmd)
 		Expect(err).NotTo(HaveOccurred(), "PostgreSQL cluster should be ready")
 
+		By("Ensuring PostgreSQL pod is ready")
+		cmd = exec.Command("kubectl", "wait", "--for=condition=Ready", "pod",
+			"-l", fmt.Sprintf("cnpg.io/cluster=%s", clusterName), "-n", testNamespace, "--timeout=600s")
+		_, err = testutil.Run(cmd)
+		Expect(err).NotTo(HaveOccurred(), "PostgreSQL pod should be ready")
+
 		By("Verifying pg-operator is ready")
 		cmd = exec.Command("kubectl", "wait", "--for=condition=Available",
 			"deployment/operator-controller-manager", "-n", "operator-system", "--timeout=300s")
