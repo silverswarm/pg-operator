@@ -73,6 +73,37 @@ var _ = Describe("PostgreSQL Operator", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred(), "pg-operator should be ready")
 	})
 
+	AfterEach(func() {
+		if CurrentSpecReport().Failed() {
+			By("Dumping debug information")
+			commands := []struct {
+				desc string
+				cmd  *exec.Cmd
+			}{
+				{
+					"operator logs",
+					exec.Command("kubectl", "logs", "deployment/operator-controller-manager", "-n", "operator-system", "--tail=100"),
+				},
+				{
+					"cnpg cluster logs",
+					exec.Command("kubectl", "logs", "-l", fmt.Sprintf("cnpg.io/cluster=%s", clusterName), "-n", testNamespace, "--tail=100"),
+				},
+				{
+					"all pods",
+					exec.Command("kubectl", "get", "pods", "-A"),
+				},
+			}
+			for _, c := range commands {
+				output, err := testutil.Run(c.cmd)
+				if err != nil {
+					GinkgoWriter.Printf("error running %s: %v\n", c.desc, err)
+					continue
+				}
+				GinkgoWriter.Printf("----- %s -----\n%s\n", c.desc, output)
+			}
+		}
+	})
+
 	Context("PostGresConnection", func() {
 		It("should create and validate connection", func() {
 			By("Creating PostGresConnection")
@@ -88,8 +119,10 @@ var _ = Describe("PostgreSQL Operator", Ordered, func() {
 					Namespace: testNamespace,
 				}, connection)
 				if err != nil {
+					GinkgoWriter.Printf("error fetching connection: %v\n", err)
 					return false
 				}
+				GinkgoWriter.Printf("connection status: ready=%v message=%s\n", connection.Status.Ready, connection.Status.Message)
 				return connection.Status.Ready
 			}, timeout, interval).Should(BeTrue())
 
