@@ -59,7 +59,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test -coverprofile=coverage.out $$(go list ./... | grep -v /e2e)
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" bash -c 'set -euo pipefail; echo "mode: set" > coverage.out; for pkg in $(shell go list ./... | grep -v /e2e); do go test -coverprofile=profile.out $$pkg; if [ -f profile.out ]; then tail -n +2 profile.out >> coverage.out; rm profile.out; fi; done'
 	go tool cover -html=coverage.out -o coverage.html
 
 # TODO(user): To use a different vendor for e2e tests, modify the setup under 'tests/e2e'.
