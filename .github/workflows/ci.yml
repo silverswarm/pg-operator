@@ -121,6 +121,7 @@ jobs:
           kubectl wait --for=delete cluster/postgres-cluster --timeout=300s || true
           kubectl apply -f test/e2e/manifests/postgres-cluster.yaml
           kubectl wait --for=condition=Ready cluster/postgres-cluster --timeout=600s
+          kubectl wait --for=condition=Ready pod -l cnpg.io/cluster=postgres-cluster -n default --timeout=600s
 
       - name: Build and load operator image into Kind
         run: |

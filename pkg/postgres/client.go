@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -11,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type Client struct {
@@ -29,6 +31,9 @@ func (c *Client) Connect(ctx context.Context, pgConn *postgresv1.PostGresConnect
 		return nil, fmt.Errorf("failed to get connection details: %w", err)
 	}
 
+	log := logf.FromContext(ctx)
+	log.Info("Attempting PostgreSQL connection", "host", host, "port", port, "user", username)
+
 	sslMode := pgConn.Spec.SSLMode
 	if sslMode == "" {
 		sslMode = "require"
@@ -39,6 +44,7 @@ func (c *Client) Connect(ctx context.Context, pgConn *postgresv1.PostGresConnect
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
+		log.Error(err, "Failed to open database connection")
 		return nil, fmt.Errorf("failed to open database connection: %w", err)
 	}
 
@@ -46,10 +52,12 @@ func (c *Client) Connect(ctx context.Context, pgConn *postgresv1.PostGresConnect
 	defer cancel()
 
 	if err := db.PingContext(ctx); err != nil {
+		log.Error(err, "Failed to ping database")
 		db.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
+	log.Info("Successfully connected to database")
 	return db, nil
 }
 
@@ -59,8 +67,19 @@ func (c *Client) getConnectionDetails(ctx context.Context, pgConn *postgresv1.Po
 	if port == 0 {
 		port = 5432
 	}
+
 	if host == "" {
-		host = fmt.Sprintf("%s-rw", pgConn.Spec.ClusterName)
+		clusterNamespace := pgConn.Spec.ClusterNamespace
+		if clusterNamespace == "" {
+			clusterNamespace = pgConn.Namespace
+		}
+
+		clusterDomain := os.Getenv("KUBERNETES_CLUSTER_DOMAIN")
+		if clusterDomain == "" {
+			clusterDomain = "cluster.local"
+		}
+
+		host = fmt.Sprintf("%s-rw.%s.svc.%s", pgConn.Spec.ClusterName, clusterNamespace, clusterDomain)
 	}
 
 	username, password, err := c.getCredentials(ctx, pgConn)
@@ -82,7 +101,10 @@ func (c *Client) getCredentials(ctx context.Context, pgConn *postgresv1.PostGres
 		}
 	} else {
 		secretName = fmt.Sprintf("%s-superuser", pgConn.Spec.ClusterName)
-		secretNamespace = pgConn.Namespace
+		secretNamespace = pgConn.Spec.ClusterNamespace
+		if secretNamespace == "" {
+			secretNamespace = pgConn.Namespace
+		}
 	}
 
 	var secret corev1.Secret
