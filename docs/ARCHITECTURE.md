@@ -244,7 +244,6 @@ scripts/
 - Unit tests for service layer components
 - Integration tests with real PostgreSQL
 - E2E tests with CNPG clusters in kind
-- Automated coverage reporting
 
 ## Design Decisions
 

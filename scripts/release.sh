@@ -92,9 +92,9 @@ fi
 # Run tests before release
 echo "🧪 Running tests..."
 if [[ "$DRY_RUN" == "false" ]]; then
-    ./scripts/test.sh --coverage
+    ./scripts/test.sh
 else
-    echo "   Would run: ./scripts/test.sh --coverage"
+    echo "   Would run: ./scripts/test.sh"
 fi
 
 # Generate manifests
