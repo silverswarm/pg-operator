@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Comprehensive test script for pg-operator
-# Runs unit tests, integration tests, and generates coverage reports
+# Runs unit, integration, and e2e tests
 
 set -euo pipefail
 
@@ -8,7 +8,6 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 # Default values
-COVERAGE=false
 VERBOSE=false
 RACE=false
 INTEGRATION=false
@@ -18,10 +17,6 @@ PACKAGE="./..."
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
-        -c|--coverage)
-            COVERAGE=true
-            shift
-            ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -45,7 +40,6 @@ while [[ $# -gt 0 ]]; do
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo "Options:"
-            echo "  -c, --coverage     Generate coverage report"
             echo "  -v, --verbose      Verbose output"
             echo "  -r, --race         Enable race detector"
             echo "  -i, --integration  Run integration tests"
@@ -70,14 +64,6 @@ if [[ "$VERBOSE" == "true" ]]; then
 fi
 if [[ "$RACE" == "true" ]]; then
     TEST_FLAGS+=("-race")
-fi
-if [[ "$COVERAGE" == "true" ]]; then
-    TEST_FLAGS+=("-coverprofile=coverage.out" "-covermode=atomic")
-fi
-
-# Clean previous coverage files
-if [[ "$COVERAGE" == "true" ]]; then
-    rm -f coverage.out coverage.html
 fi
 
 # Run unit tests
@@ -127,21 +113,5 @@ if [[ "$E2E" == "true" ]]; then
     go test "${TEST_FLAGS[@]}" -tags=e2e ./test/e2e/...
 fi
 
-# Generate coverage report
-if [[ "$COVERAGE" == "true" ]] && [[ -f "coverage.out" ]]; then
-    echo "📊 Generating coverage report..."
-    go tool cover -html=coverage.out -o coverage.html
-    
-    # Calculate coverage percentage
-    COVERAGE_PERCENT=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
-    echo "📈 Total coverage: $COVERAGE_PERCENT"
-    
-    if command -v open &> /dev/null; then
-        echo "🌐 Opening coverage report in browser..."
-        open coverage.html
-    else
-        echo "📄 Coverage report saved to coverage.html"
-    fi
-fi
-
 echo "✅ Tests completed successfully!"
+ 
