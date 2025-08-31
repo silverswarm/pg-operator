@@ -137,7 +137,6 @@ This project adheres to a code of conduct that we expect all contributors to fol
 - Write unit tests for new functions
 - Test error conditions and edge cases
 - Mock external dependencies
-- Maintain or improve code coverage
 
 ### Documentation Standards
 
